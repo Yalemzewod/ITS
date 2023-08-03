@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.2.269">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>ITS Analysis</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+
+<script src="ITS_files/libs/clipboard/clipboard.min.js"></script>
+<script src="ITS_files/libs/quarto-html/quarto.js"></script>
+<script src="ITS_files/libs/quarto-html/popper.min.js"></script>
+<script src="ITS_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="ITS_files/libs/quarto-html/anchor.min.js"></script>
+<link href="ITS_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="ITS_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="ITS_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="ITS_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="ITS_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">ITS Analysis</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<section id="data-preparation-controlled" class="level2">
+<h2 class="anchored" data-anchor-id="data-preparation-controlled">Data preparation (Controlled)</h2>
+<p>The data was aggregated monthly from 2013 to 2018 at the village level in Amhara Region, Ethiopia. The below code will read the data from the <code>xlsx</code> file. The purpose is to conduct a controlled interrupted time series analysis in R, taking a 2014 mass test-and-treat campaign, followed by focal test-and-treat through 2017, for malaria control. Intervention impact is estimated using the INLA package.</p>
+<p><strong>Case data</strong>: There are 12 villages in total, 6 in each of the intervention and control groups. Villages are observed for 61 months and incidence cases were captured at each months.</p>
+<p><strong>Intervention (MTAT)</strong>: the intervention rolled out on month 12 (Sept 2014) in all intervention villages. Villages are levelled into two groups (control or intervention).</p>
+<p><strong>Time</strong>: defined in months. In the data, there are three-time variables: <code>time</code> since the beginning of the study, a spline term for months since the beginning of the intervention, <code>time_post</code> time spline for the post-intervention period and <code>post</code> indicator for whether observation following intervention roll-out. Our exposures of interest are the interactions of the group with the 1) post-intervention period and 2) time since the intervention.</p>
+<p><strong>Covariates</strong>: (i) Environmental data extracted from the Malaria Atlas Project database such as evi, daylight temp, night light temp and rainfall, (ii) and intervention (vector control) data that includes LLINs and IRS.</p>
+<p>Install and/or load packages if required</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span>opts_chunk<span class="sc">$</span><span class="fu">set</span>(<span class="at">eval =</span> <span class="cn">TRUE</span>, <span class="at">include =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># for first use only</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co">#install.packages("INLA", repos = "https://inla.r-inla-download.org/R/stable", dep = TRUE) </span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse) <span class="co"># data management</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+✔ dplyr     1.1.1     ✔ readr     2.1.4
+✔ forcats   1.0.0     ✔ stringr   1.5.0
+✔ ggplot2   3.4.2     ✔ tibble    3.2.1
+✔ lubridate 1.9.2     ✔ tidyr     1.3.0
+✔ purrr     1.0.1     
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ dplyr::filter() masks stats::filter()
+✖ dplyr::lag()    masks stats::lag()
+ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readxl) <span class="co"># read xls file</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(hablar) <span class="co"># convert variable type</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'hablar'
+
+The following object is masked from 'package:forcats':
+
+    fct
+
+The following object is masked from 'package:dplyr':
+
+    na_if
+
+The following object is masked from 'package:tibble':
+
+    num</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(janitor) <span class="co"># clean names</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'janitor'
+
+The following objects are masked from 'package:stats':
+
+    chisq.test, fisher.test</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(INLA) <span class="co"># modelling</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'INLA' was built under R version 4.2.3</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: Matrix
+
+Attaching package: 'Matrix'
+
+The following objects are masked from 'package:tidyr':
+
+    expand, pack, unpack
+
+Loading required package: foreach
+
+Attaching package: 'foreach'
+
+The following objects are masked from 'package:purrr':
+
+    accumulate, when
+
+Loading required package: parallel
+Loading required package: sp
+This is INLA_23.04.24 built 2023-04-24 19:15:35 UTC.
+ - See www.r-inla.org/contact-us for how to get help.
+ - To enable PARDISO sparse library; see inla.pardiso()</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lubridate) <span class="co"># date</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(zoo) <span class="co"># irregular time</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'zoo'
+
+The following objects are masked from 'package:base':
+
+    as.Date, as.Date.numeric</code></pre>
+</div>
+</div>
+</section>
+<section id="standard-its" class="level2">
+<h2 class="anchored" data-anchor-id="standard-its">Standard ITS</h2>
+<p>The data was aggregated monthly from 2013 to 2018 at the village level in Amhara Region, Ethiopia. The below code will read the data from the <code>xlsx</code> file. The intervention taking a 2014 mass test-and-treat campaign, followed by focal test-and-treat through 2017, for malaria control. Intervention impact is estimated using the INLA package.</p>
+<p><strong>Case data</strong>: There are 6 villages, all intervention groups. Villages are observed for 61 months and incidence cases were captured at each months.</p>
+<p><strong>Intervention (MTAT)</strong>: the intervention rolled out on month 12 (Sept 2014) in all intervention villages. Intervention villages are filtered for standard ITS</p>
+<div class="cell">
+
+</div>
+<p>Inspect the data structure and variable lists</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>s_data <span class="sc">%&gt;%</span> </span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">glimpse</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 366
+Columns: 20
+$ village         &lt;chr&gt; "Kumer Aftit", "Kumer Aftit", "Kumer Aftit", "Kumer Af…
+$ period          &lt;chr&gt; "September 2013", "October 2013", "November 2013", "De…
+$ stratum         &lt;chr&gt; "3", "3", "3", "3", "3", "3", "3", "3", "3", "3", "3",…
+$ population      &lt;dbl&gt; 3199, 3199, 3199, 3199, 3263, 3263, 3263, 3263, 3263, …
+$ cases           &lt;dbl&gt; 47, 65, 29, 17, 7, 12, 11, 10, 27, 23, 23, 15, 26, 53,…
+$ ir              &lt;chr&gt; "14.69209127852454", "20.31884964051266", "9.065332916…
+$ altitude        &lt;dbl&gt; 735, 735, 735, 735, 735, 735, 735, 735, 735, 735, 735,…
+$ longitude       &lt;dbl&gt; 36.36133, 36.36133, 36.36133, 36.36133, 36.36133, 36.3…
+$ latitude        &lt;dbl&gt; 12.80153, 12.80153, 12.80153, 12.80153, 12.80153, 12.8…
+$ evi             &lt;dbl&gt; 0.4484723, 0.3960933, 0.2563009, 0.1690017, 0.1485518,…
+$ lst_day         &lt;dbl&gt; 30.32500, 32.55667, 36.82500, 38.05000, 40.28500, 43.1…
+$ lst_night       &lt;dbl&gt; 19.47119, 20.75667, 19.16000, 16.62387, 18.32500, 19.7…
+$ rainfall        &lt;dbl&gt; 1.281828e+02, 5.595180e+01, 1.619233e+00, 2.295833e-01…
+$ lli_ns_coverage &lt;dbl&gt; 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100,…
+$ irs_coverage    &lt;dbl&gt; 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 82, 82…
+$ id              &lt;int&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, …
+$ time            &lt;int&gt; 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, …
+$ time_post       &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, …
+$ post            &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, …
+$ date            &lt;date&gt; 2013-09-01, 2013-10-01, 2013-11-01, 2013-12-01, 2014-…</code></pre>
+</div>
+</div>
+</section>
+<section id="standard-its---exploratory" class="level2">
+<h2 class="anchored" data-anchor-id="standard-its---exploratory">Standard ITS - Exploratory</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(s_data <span class="sc">%&gt;%</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>         <span class="fu">group_by</span>(time) <span class="sc">%&gt;%</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>         <span class="fu">summarise</span>(<span class="at">incidence =</span> <span class="fu">sum</span>(cases)<span class="sc">/</span><span class="fu">sum</span>(population)<span class="sc">*</span><span class="dv">1000</span>)) <span class="sc">+</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x =</span> time, <span class="at">y =</span> incidence)) <span class="sc">+</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="fu">aes</span>(<span class="at">xintercept =</span> <span class="dv">12</span>, <span class="at">linetype =</span> <span class="st">"MTAT roll-out"</span>), <span class="at">color =</span> <span class="st">"green"</span>) <span class="sc">+</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Monthly incidence per 1,000 population"</span>, <span class="at">linetype =</span> <span class="st">""</span>,</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Incidence"</span>, <span class="at">x =</span> <span class="st">"Months since beginning of the study"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="ITS_files/figure-html/Visualize%20data%20for%20standard%20ITS-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="standard-its---modelling" class="level2">
+<h2 class="anchored" data-anchor-id="standard-its---modelling">Standard ITS - Modelling</h2>
+<p>Monthly incidence rate estimates assuming a negative binomial distribution, using the log population as an offset, with stratum as fixed effect, random intercepts for each village (IID), and the month of observation (AR-1).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># build a model</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>models <span class="ot">=</span> <span class="fu">inla</span>(cases <span class="sc">~</span> time <span class="sc">+</span> time_post <span class="sc">+</span> post <span class="sc">+</span> stratum <span class="sc">+</span> <span class="fu">I</span>(<span class="fu">lag</span>(evi)) <span class="sc">+</span> </span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>               <span class="fu">I</span>(<span class="fu">lag</span>(rainfall)) <span class="sc">+</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>               <span class="fu">I</span>(<span class="fu">lag</span>(lst_night)) <span class="sc">+</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>               <span class="fu">I</span>(<span class="fu">lag</span>(lst_day)) <span class="sc">+</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>               <span class="fu">I</span>(<span class="fu">as.factor</span>(<span class="fu">month</span>(date))) <span class="sc">+</span> </span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>               <span class="fu">offset</span>(<span class="fu">log</span>(population)) <span class="sc">+</span> </span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>               <span class="fu">f</span>(time2, <span class="at">model =</span> <span class="st">"ar1"</span>) <span class="sc">+</span> <span class="fu">f</span>(id, <span class="at">model =</span> <span class="st">"iid"</span>),</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>               <span class="co"># model fitness &amp; comparison</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>               <span class="at">control.compute=</span><span class="fu">list</span>(<span class="at">dic=</span><span class="cn">TRUE</span>,<span class="at">cpo=</span><span class="cn">TRUE</span>,  <span class="at">waic =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>               <span class="at">family =</span> <span class="st">"nbinomial"</span>, <span class="at">data =</span> s_data<span class="sc">%&gt;%</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>               <span class="fu">mutate</span>(<span class="at">time2 =</span> time))</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a><span class="co"># save the model results in data frame</span></span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>results <span class="ot">=</span> <span class="fu">exp</span>(<span class="fu">summary</span>(models)[[<span class="dv">3</span>]])[,<span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">5</span>)] <span class="sc">%&gt;%</span> </span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">round</span>(<span class="dv">3</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.data.frame</span>()</span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(results) <span class="ot">=</span> <span class="fu">c</span>(<span class="st">"Incidence rate ratio"</span>, <span class="st">"2.5th quantile, IRR"</span>, <span class="st">"97.5th quantile, IRR"</span>)</span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(results) <span class="ot">=</span> <span class="fu">c</span>(<span class="st">"Intercept"</span>, <span class="st">"Months since study beginning"</span>, <span class="st">"Months since MTAT"</span>, <span class="st">"Stratum2b"</span>, <span class="st">"Stratum3"</span>,</span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"Post period"</span>, <span class="st">"1-month lagged EVI"</span>, <span class="st">"1-month lagged rainfall"</span>, </span>
+<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"1-month lagged night temp"</span>, <span class="st">"1-month lagged day temp"</span>,</span>
+<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"Feb"</span>, <span class="st">"Mar"</span>, <span class="st">"Apr"</span>, <span class="st">"May"</span>, <span class="st">"Jun"</span>, <span class="st">"Jul"</span>, <span class="st">"Aug"</span>, <span class="st">"Sep"</span>, <span class="st">"Oct"</span>, <span class="st">"Nov"</span>, <span class="st">"Dec"</span>)</span>
+<span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a>kableExtra<span class="sc">::</span><span class="fu">kable</span>(results, <span class="at">booktabs =</span> T)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+
+<table>
+ <thead>
+  <tr>
+   <th style="text-align:left;">   </th>
+   <th style="text-align:right;"> Incidence rate ratio </th>
+   <th style="text-align:right;"> 2.5th quantile, IRR </th>
+   <th style="text-align:right;"> 97.5th quantile, IRR </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td style="text-align:left;"> Intercept </td>
+   <td style="text-align:right;"> 0.000 </td>
+   <td style="text-align:right;"> 0.000 </td>
+   <td style="text-align:right;"> 0.017 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Months since study beginning </td>
+   <td style="text-align:right;"> 0.860 </td>
+   <td style="text-align:right;"> 0.698 </td>
+   <td style="text-align:right;"> 1.058 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Months since MTAT </td>
+   <td style="text-align:right;"> 1.138 </td>
+   <td style="text-align:right;"> 0.913 </td>
+   <td style="text-align:right;"> 1.418 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Stratum2b </td>
+   <td style="text-align:right;"> 0.550 </td>
+   <td style="text-align:right;"> 0.105 </td>
+   <td style="text-align:right;"> 2.959 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Stratum3 </td>
+   <td style="text-align:right;"> 0.962 </td>
+   <td style="text-align:right;"> 0.111 </td>
+   <td style="text-align:right;"> 8.989 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Post period </td>
+   <td style="text-align:right;"> 19.826 </td>
+   <td style="text-align:right;"> 2.217 </td>
+   <td style="text-align:right;"> 216.156 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 1-month lagged EVI </td>
+   <td style="text-align:right;"> 0.013 </td>
+   <td style="text-align:right;"> 0.000 </td>
+   <td style="text-align:right;"> 1.028 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 1-month lagged rainfall </td>
+   <td style="text-align:right;"> 1.003 </td>
+   <td style="text-align:right;"> 0.999 </td>
+   <td style="text-align:right;"> 1.007 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 1-month lagged night temp </td>
+   <td style="text-align:right;"> 0.934 </td>
+   <td style="text-align:right;"> 0.808 </td>
+   <td style="text-align:right;"> 1.080 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 1-month lagged day temp </td>
+   <td style="text-align:right;"> 1.064 </td>
+   <td style="text-align:right;"> 0.971 </td>
+   <td style="text-align:right;"> 1.163 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Feb </td>
+   <td style="text-align:right;"> 0.742 </td>
+   <td style="text-align:right;"> 0.289 </td>
+   <td style="text-align:right;"> 1.917 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Mar </td>
+   <td style="text-align:right;"> 0.786 </td>
+   <td style="text-align:right;"> 0.274 </td>
+   <td style="text-align:right;"> 2.273 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Apr </td>
+   <td style="text-align:right;"> 0.614 </td>
+   <td style="text-align:right;"> 0.184 </td>
+   <td style="text-align:right;"> 2.077 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> May </td>
+   <td style="text-align:right;"> 0.900 </td>
+   <td style="text-align:right;"> 0.262 </td>
+   <td style="text-align:right;"> 3.158 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Jun </td>
+   <td style="text-align:right;"> 2.404 </td>
+   <td style="text-align:right;"> 0.697 </td>
+   <td style="text-align:right;"> 8.466 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Jul </td>
+   <td style="text-align:right;"> 3.943 </td>
+   <td style="text-align:right;"> 1.179 </td>
+   <td style="text-align:right;"> 13.410 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Aug </td>
+   <td style="text-align:right;"> 6.706 </td>
+   <td style="text-align:right;"> 1.486 </td>
+   <td style="text-align:right;"> 30.846 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Sep </td>
+   <td style="text-align:right;"> 7.207 </td>
+   <td style="text-align:right;"> 1.436 </td>
+   <td style="text-align:right;"> 36.892 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Oct </td>
+   <td style="text-align:right;"> 17.116 </td>
+   <td style="text-align:right;"> 3.892 </td>
+   <td style="text-align:right;"> 76.172 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Nov </td>
+   <td style="text-align:right;"> 12.566 </td>
+   <td style="text-align:right;"> 3.561 </td>
+   <td style="text-align:right;"> 44.657 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Dec </td>
+   <td style="text-align:right;"> 3.927 </td>
+   <td style="text-align:right;"> 1.487 </td>
+   <td style="text-align:right;"> 10.350 </td>
+  </tr>
+</tbody>
+</table>
+
+</div>
+</div>
+<p>Next, we conduct a counter factual analysis to estimate how many additional cases would have been observed if not for the intervention. To accomplish this, we convert the predicted case counts, which are labelled <code>mean</code> in <code>models$summary.fitted.values</code>, back to the log scale so that we can remove the effects associated with the intervention. Specifically, the regression coefficient for the post-intervention period (level change) and time since intervention roll-out (trend change), multiplied by time since roll-out, are subtracted off. Now, we have counterfactual case counts in log-scale, which we can exponeniate to get counterfactual cases. In our data, cases declined with 532, or 32% decrease, during the MTAT/FTAT period.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>counterfactual <span class="ot">=</span> s_data <span class="sc">%&gt;%</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_cols</span>(models<span class="sc">$</span>summary.fitted.values) <span class="sc">%&gt;%</span> <span class="co">#Join predicted case counts to data</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(post<span class="sc">==</span><span class="dv">1</span>) <span class="sc">%&gt;%</span> <span class="co">#Restrict to the post period</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">log_mean =</span> <span class="fu">log</span>(mean), <span class="co">#Convert estimates back to log scale</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>         <span class="at">counterfactual_cases =</span> <span class="fu">exp</span>(log_mean <span class="sc">-</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>                                      <span class="fu">summary</span>(models)[[<span class="dv">3</span>]][<span class="st">"time_post"</span>,<span class="st">"mean"</span>] <span class="sc">*</span> time_post <span class="sc">-</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>                                      <span class="fu">summary</span>(models)[[<span class="dv">3</span>]][<span class="st">"post"</span>,<span class="st">"mean"</span>] <span class="sc">*</span> post)) <span class="sc">%&gt;%</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">counterfactual_cases =</span> <span class="fu">sum</span>(counterfactual_cases),</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>            <span class="at">estimated_cases =</span> <span class="fu">sum</span>(mean))</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>counterfactual<span class="sc">$</span>counterfactual_cases <span class="sc">-</span> counterfactual<span class="sc">$</span>estimated_cases <span class="co">#Cases averted</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] -527.433</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>(counterfactual<span class="sc">$</span>counterfactual_cases <span class="sc">-</span> counterfactual<span class="sc">$</span>estimated_cases)<span class="sc">/</span>counterfactual<span class="sc">$</span>estimated_cases<span class="sc">*</span><span class="dv">100</span> <span class="co">#Percent reduction</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] -31.38547</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(s_data <span class="sc">%&gt;%</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>         <span class="fu">bind_cols</span>(models<span class="sc">$</span>summary.fitted.values) <span class="sc">%&gt;%</span> <span class="co">#Join predicted case counts to data</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>         <span class="fu">mutate</span>(<span class="at">log_mean =</span> <span class="fu">log</span>(mean), <span class="co">#Convert estimates back to log scale</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>                <span class="at">counterfactual_cases =</span> <span class="fu">exp</span>(log_mean <span class="sc">-</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>                                      <span class="fu">summary</span>(models)[[<span class="dv">3</span>]][<span class="st">"time_post"</span>,<span class="st">"mean"</span>] <span class="sc">*</span> time_post <span class="sc">-</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>                                      <span class="fu">summary</span>(models)[[<span class="dv">3</span>]][<span class="st">"post"</span>,<span class="st">"mean"</span>] <span class="sc">*</span> post)) <span class="sc">%&gt;%</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>         <span class="fu">group_by</span>(time) <span class="sc">%&gt;%</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>         <span class="fu">summarise</span>(<span class="at">incidence =</span> <span class="fu">sum</span>(cases)<span class="sc">/</span><span class="fu">sum</span>(population)<span class="sc">*</span><span class="dv">1000</span>,</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>                   <span class="at">estimated_incidence =</span> <span class="fu">sum</span>(mean)<span class="sc">/</span><span class="fu">sum</span>(population)<span class="sc">*</span><span class="dv">1000</span>,</span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>                   <span class="at">counterfactual_incidence =</span> <span class="fu">sum</span>(counterfactual_cases)<span class="sc">/</span><span class="fu">sum</span>(population)<span class="sc">*</span><span class="dv">1000</span>)) <span class="sc">+</span></span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x =</span> time, <span class="at">y =</span> counterfactual_incidence, <span class="at">color =</span> <span class="st">"Counterfactual"</span>)) <span class="sc">+</span></span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x =</span> time, <span class="at">y =</span> estimated_incidence, <span class="at">color =</span> <span class="st">"Estimated"</span>)) <span class="sc">+</span></span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x =</span> time, <span class="at">y =</span> incidence, <span class="at">color =</span> <span class="st">"Observed"</span>)) <span class="sc">+</span></span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="fu">aes</span>(<span class="at">xintercept =</span> <span class="dv">12</span>, <span class="at">linetype =</span> <span class="st">"MTAT roll-out"</span>)) <span class="sc">+</span></span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Monthly incidence per 1,000 population"</span>, <span class="at">linetype =</span> <span class="st">""</span>, <span class="at">color =</span> <span class="st">"Incidence"</span>,</span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Incidence"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="ITS_files/figure-html/Counterfactual%20plot-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="controlled-its" class="level1">
+<h1><strong>Controlled ITS</strong></h1>
+<p>The data was aggregated monthly from 2013 to 2018 at the village level in Amhara Region, Ethiopia. The code provided below will read the data from the specified xlsx file (e.g., “filename.xlsx”) and the corresponding sheet name (if applicable). The purpose of this analysis is to conduct a controlled interrupted time series analysis in R, focusing on a mass test-and-treat campaign in 2014 (MTAT), followed by focal test-and-treat interventions until 2017 for malaria control. The intervention impact will be estimated using the Integrated Nested Laplace Approximation (INLA) package.</p>
+<p><strong>Case data</strong>: The study includes a total of 12 villages, with 6 villages assigned to the intervention group and 6 to the control group. These villages were observed for 61 months, and the incidence cases were captured monthly.</p>
+<p><strong>Intervention (MTAT)</strong>: The intervention was implemented in all intervention villages in September 2014 (month 12). The villages were divided into two groups: control and intervention.</p>
+<p><strong>Time</strong>: Time is defined in months. In the dataset, there are three time variables: (1) time since the beginning of the study, (2) a spline term representing months since the beginning of the intervention, (3) time_post spline representing the post-intervention period, and (4) a post indicator to determine observations following the intervention roll-out. Our exposures of interest are the interactions of the group with (1) the post-intervention period and (2) time since the intervention.</p>
+<p><strong>Covariates</strong>: The analysis includes environmental data extracted from the Malaria Atlas Project database, such as evi, daylight temp, night light temp, and rainfall. Additionally, intervention data related to vector control measures, including Long-Lasting Insecticidal Nets (LLINs) and Indoor Residual Spraying (IRS), are considered as covariates.</p>
+<div class="cell">
+
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(c_data <span class="sc">%&gt;%</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>         <span class="fu">group_by</span>(group, time) <span class="sc">%&gt;%</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>         <span class="fu">summarise</span>(<span class="at">incidence =</span> <span class="fu">sum</span>(cases)<span class="sc">/</span><span class="fu">sum</span>(population)<span class="sc">*</span><span class="dv">1000</span>)) <span class="sc">+</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x =</span> time, <span class="at">y =</span> incidence, <span class="at">color =</span> group)) <span class="sc">+</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="fu">aes</span>(<span class="at">xintercept =</span> <span class="dv">12</span>, <span class="at">linetype =</span> <span class="st">"MTAT roll-out"</span>)) <span class="sc">+</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Monthly incidence per 1,000 population"</span>, <span class="at">linetype =</span> <span class="st">""</span>,</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Incidence"</span>, <span class="at">x =</span> <span class="st">"Months since beginning of the study"</span>, <span class="at">color =</span> <span class="st">"Group"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="ITS_files/figure-html/Visualize%20data-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>We estimate monthly incidence rates, assuming a negative binomial distribution, using log population as an offset with, <code>fixed effects of stratum</code>, random intercepts for each village (IID) and the month of observation (AR-1). Interaction terms are used to estimate the relative change in incidence rates in intervention areas compared to control areas 1) immediately following MTAT (level change) and 2) each additional month thereafter (trend change).</p>
+<p>In the intervention group, we estimate a –% greater reduction in incidence following roll-out compared to the control group. A –% decrease per month over baseline is estimated in the intervention group above and beyond the decrease estimated in the control group (--% ). Prior distribution is set to fix the prcesion.</p>
+<p>Random intercept for each village (IID), the month of observation (AR-1), and stratum (iid)</p>
+<p><strong>Model comparison: DIC, CPO and/or PIT</strong></p>
+<p>The precision of stratum has been fixed with the prior information.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(modelc2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+   c("inla.core(formula = formula, family = family, contrasts = contrasts, 
+   ", " data = data, quantiles = quantiles, E = E, offset = offset, ", " 
+   scale = scale, weights = weights, Ntrials = Ntrials, strata = strata, 
+   ", " lp.scale = lp.scale, link.covariates = link.covariates, verbose = 
+   verbose, ", " lincomb = lincomb, selection = selection, control.compute 
+   = control.compute, ", " control.predictor = control.predictor, 
+   control.family = control.family, ", " control.inla = control.inla, 
+   control.fixed = control.fixed, ", " control.mode = control.mode, 
+   control.expert = control.expert, ", " control.hazard = control.hazard, 
+   control.lincomb = control.lincomb, ", " control.update = 
+   control.update, control.lp.scale = control.lp.scale, ", " 
+   control.pardiso = control.pardiso, only.hyperparam = only.hyperparam, 
+   ", " inla.call = inla.call, inla.arg = inla.arg, num.threads = 
+   num.threads, ", " blas.num.threads = blas.num.threads, keep = keep, 
+   working.directory = working.directory, ", " silent = silent, inla.mode 
+   = inla.mode, safe = FALSE, debug = debug, ", " .parent.frame = 
+   .parent.frame)") 
+Time used:
+    Pre = 0.746, Running = 4.81, Post = 0.252, Total = 5.81 
+Fixed effects:
+                              mean    sd 0.025quant 0.5quant 0.975quant   mode
+(Intercept)                 -7.056 1.807    -10.595   -7.072     -3.424 -7.102
+time                        -0.201 0.067     -0.333   -0.200     -0.069 -0.200
+groupIntervention           -0.075 0.703     -1.472   -0.076      1.325 -0.077
+time_post                    0.177 0.070      0.039    0.177      0.315  0.177
+post                         1.439 0.562      0.345    1.436      2.555  1.429
+I(lag(evi))                 -2.390 1.265     -4.882   -2.387      0.082 -2.380
+I(lag(rainfall))             0.001 0.001     -0.001    0.001      0.004  0.001
+I(lag(lst_night))           -0.040 0.040     -0.118   -0.040      0.039 -0.040
+I(lag(lst_day))              0.048 0.026     -0.004    0.048      0.099  0.048
+I(as.factor(month(date)))2  -0.142 0.263     -0.660   -0.142      0.375 -0.142
+I(as.factor(month(date)))3  -0.241 0.299     -0.828   -0.241      0.346 -0.241
+I(as.factor(month(date)))4  -0.389 0.350     -1.077   -0.389      0.299 -0.388
+I(as.factor(month(date)))5  -0.110 0.361     -0.821   -0.110      0.600 -0.110
+I(as.factor(month(date)))6   0.591 0.357     -0.109    0.590      1.293  0.589
+I(as.factor(month(date)))7   1.034 0.347      0.354    1.033      1.717  1.032
+I(as.factor(month(date)))8   1.402 0.458      0.507    1.401      2.304  1.398
+I(as.factor(month(date)))9   1.582 0.486      0.634    1.580      2.540  1.577
+I(as.factor(month(date)))10  2.455 0.437      1.600    2.454      3.316  2.452
+I(as.factor(month(date)))11  1.939 0.365      1.224    1.939      2.657  1.938
+I(as.factor(month(date)))12  1.189 0.271      0.657    1.189      1.721  1.189
+time:groupIntervention       0.108 0.052      0.007    0.108      0.209  0.108
+groupIntervention:time_post -0.102 0.052     -0.205   -0.102      0.000 -0.102
+groupIntervention:post      -2.513 0.454     -3.405   -2.513     -1.624 -2.512
+                              kld
+(Intercept)                 0.002
+time                        0.000
+groupIntervention           0.000
+time_post                   0.000
+post                        0.000
+I(lag(evi))                 0.000
+I(lag(rainfall))            0.000
+I(lag(lst_night))           0.000
+I(lag(lst_day))             0.000
+I(as.factor(month(date)))2  0.000
+I(as.factor(month(date)))3  0.000
+I(as.factor(month(date)))4  0.000
+I(as.factor(month(date)))5  0.000
+I(as.factor(month(date)))6  0.000
+I(as.factor(month(date)))7  0.000
+I(as.factor(month(date)))8  0.000
+I(as.factor(month(date)))9  0.000
+I(as.factor(month(date)))10 0.000
+I(as.factor(month(date)))11 0.000
+I(as.factor(month(date)))12 0.000
+time:groupIntervention      0.000
+groupIntervention:time_post 0.000
+groupIntervention:post      0.000
+
+Random effects:
+  Name    Model
+    time2 AR1 model
+   id IID model
+   stratum IID model
+
+Model hyperparameters:
+                                                        mean    sd 0.025quant
+size for the nbinomial observations (1/overdispersion) 1.161 0.096      0.980
+Precision for time2                                    6.331 3.711      1.658
+Rho for time2                                          0.833 0.114      0.542
+Precision for id                                       1.098 0.586      0.320
+Precision for stratum                                  0.833 1.383      0.030
+                                                       0.5quant 0.975quant
+size for the nbinomial observations (1/overdispersion)    1.158      1.359
+Precision for time2                                       5.520     15.773
+Rho for time2                                             0.860      0.974
+Precision for id                                          0.981      2.561
+Precision for stratum                                     0.419      4.205
+                                                        mode
+size for the nbinomial observations (1/overdispersion) 1.154
+Precision for time2                                    4.013
+Rho for time2                                          0.923
+Precision for id                                       0.753
+Precision for stratum                                  0.072
+
+Deviance Information Criterion (DIC) ...............: 3342.20
+Deviance Information Criterion (DIC, saturated) ....: NA
+Effective number of parameters .....................: 48.23
+
+Watanabe-Akaike information criterion (WAIC) ...: 3362.39
+Effective number of parameters .................: 57.59
+
+Marginal log-Likelihood:  -1829.59 
+CPO, PIT is computed 
+Posterior summaries for the linear predictor and the fitted values are computed
+(Posterior marginals needs also 'control.compute=list(return.marginals.predictor=TRUE)')</code></pre>
+</div>
+</div>
+<p>Deviance information criterion (DIC) - the smallest the DIC indicates the best fit model.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(modelc<span class="sc">$</span>dic<span class="sc">$</span>dic, modelc2<span class="sc">$</span>dic<span class="sc">$</span>dic )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 3342.594 3342.201</code></pre>
+</div>
+</div>
+<p>Conditional predictive ordinate - the smallest the CPO indicates the best fit model.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># stratum as fixed effect</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>cpo.ctis <span class="ot">&lt;-</span> modelc<span class="sc">$</span>cpo<span class="sc">$</span>cpo </span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>cITS <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">log</span>(cpo.ctis))</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>cITS</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] -1697.863</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co"># stratum as random effect </span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>cpo.c2tis <span class="ot">&lt;-</span> modelc2<span class="sc">$</span>cpo<span class="sc">$</span>cpo </span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>controlITS <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">log</span>(cpo.c2tis))</span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>controlITS <span class="co"># </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] -1700.458</code></pre>
+</div>
+</div>
+<p>A histogram of PIT must resemble a uniform distribution;extreme values indicate outlying observations. Both models outputs doesn’t show a noral distributions - skewed to the right</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># probability integral transform (PIT)</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>pit.ctis <span class="ot">&lt;-</span> modelc<span class="sc">$</span>cpo<span class="sc">$</span>pit</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(pit.ctis,<span class="at">main =</span><span class="st">" "</span>, <span class="at">ylab=</span><span class="st">"frequency"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="ITS_files/figure-html/PIT_stis-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>pit2.ctis <span class="ot">&lt;-</span> modelc2<span class="sc">$</span>cpo<span class="sc">$</span>pit</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(pit2.ctis,<span class="at">main =</span><span class="st">" "</span>, <span class="at">ylab=</span><span class="st">"frequency"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="ITS_files/figure-html/PIT_ctis-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p><strong>Final Results - Modelc2</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>resultsc <span class="ot">=</span> <span class="fu">exp</span>(<span class="fu">summary</span>(modelc2)[[<span class="dv">3</span>]])[,<span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">5</span>)] <span class="sc">%&gt;%</span> </span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">round</span>(<span class="dv">3</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.data.frame</span>()</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(resultsc) <span class="ot">=</span> <span class="fu">c</span>(<span class="st">"Incidence rate ratio"</span>, <span class="st">"2.5th quantile, IRR"</span>, <span class="st">"97.5th quantile, IRR"</span>)</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(resultsc) <span class="ot">=</span> <span class="fu">c</span>(<span class="st">"Intercept"</span>,</span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"Months since study beginning"</span>,</span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"Intervention"</span> ,</span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"Months since MTAT"</span>,</span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"Post period"</span>,</span>
+<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"1-month lagged EVI"</span>,</span>
+<span id="cb32-12"><a href="#cb32-12" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"1-month lagged rainfall"</span>,</span>
+<span id="cb32-13"><a href="#cb32-13" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"1-month lagged night temp"</span>,</span>
+<span id="cb32-14"><a href="#cb32-14" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"1-month lagged day temp"</span>,</span>
+<span id="cb32-15"><a href="#cb32-15" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"Feb"</span>,</span>
+<span id="cb32-16"><a href="#cb32-16" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"Mar"</span>, </span>
+<span id="cb32-17"><a href="#cb32-17" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"Apr"</span>,</span>
+<span id="cb32-18"><a href="#cb32-18" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"May"</span>,</span>
+<span id="cb32-19"><a href="#cb32-19" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"Jun"</span>, </span>
+<span id="cb32-20"><a href="#cb32-20" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"Jul"</span>, </span>
+<span id="cb32-21"><a href="#cb32-21" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"Aug"</span>,</span>
+<span id="cb32-22"><a href="#cb32-22" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"Sep"</span>,</span>
+<span id="cb32-23"><a href="#cb32-23" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"Oct"</span>, </span>
+<span id="cb32-24"><a href="#cb32-24" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"Nov"</span>,</span>
+<span id="cb32-25"><a href="#cb32-25" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"Dec"</span>,</span>
+<span id="cb32-26"><a href="#cb32-26" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"time:groupIntervention"</span>,</span>
+<span id="cb32-27"><a href="#cb32-27" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"groupIntervention:time_post"</span>,</span>
+<span id="cb32-28"><a href="#cb32-28" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"groupIntervention:post"</span>)</span>
+<span id="cb32-29"><a href="#cb32-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-30"><a href="#cb32-30" aria-hidden="true" tabindex="-1"></a>kableExtra<span class="sc">::</span><span class="fu">kable</span>(resultsc, <span class="at">booktabs =</span> T)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+
+<table>
+ <thead>
+  <tr>
+   <th style="text-align:left;">   </th>
+   <th style="text-align:right;"> Incidence rate ratio </th>
+   <th style="text-align:right;"> 2.5th quantile, IRR </th>
+   <th style="text-align:right;"> 97.5th quantile, IRR </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td style="text-align:left;"> Intercept </td>
+   <td style="text-align:right;"> 0.001 </td>
+   <td style="text-align:right;"> 0.000 </td>
+   <td style="text-align:right;"> 0.033 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Months since study beginning </td>
+   <td style="text-align:right;"> 0.818 </td>
+   <td style="text-align:right;"> 0.717 </td>
+   <td style="text-align:right;"> 0.933 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Intervention </td>
+   <td style="text-align:right;"> 0.928 </td>
+   <td style="text-align:right;"> 0.229 </td>
+   <td style="text-align:right;"> 3.762 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Months since MTAT </td>
+   <td style="text-align:right;"> 1.194 </td>
+   <td style="text-align:right;"> 1.040 </td>
+   <td style="text-align:right;"> 1.370 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Post period </td>
+   <td style="text-align:right;"> 4.216 </td>
+   <td style="text-align:right;"> 1.412 </td>
+   <td style="text-align:right;"> 12.871 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 1-month lagged EVI </td>
+   <td style="text-align:right;"> 0.092 </td>
+   <td style="text-align:right;"> 0.008 </td>
+   <td style="text-align:right;"> 1.085 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 1-month lagged rainfall </td>
+   <td style="text-align:right;"> 1.001 </td>
+   <td style="text-align:right;"> 0.999 </td>
+   <td style="text-align:right;"> 1.004 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 1-month lagged night temp </td>
+   <td style="text-align:right;"> 0.961 </td>
+   <td style="text-align:right;"> 0.889 </td>
+   <td style="text-align:right;"> 1.040 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 1-month lagged day temp </td>
+   <td style="text-align:right;"> 1.049 </td>
+   <td style="text-align:right;"> 0.996 </td>
+   <td style="text-align:right;"> 1.104 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Feb </td>
+   <td style="text-align:right;"> 0.868 </td>
+   <td style="text-align:right;"> 0.517 </td>
+   <td style="text-align:right;"> 1.455 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Mar </td>
+   <td style="text-align:right;"> 0.786 </td>
+   <td style="text-align:right;"> 0.437 </td>
+   <td style="text-align:right;"> 1.413 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Apr </td>
+   <td style="text-align:right;"> 0.678 </td>
+   <td style="text-align:right;"> 0.341 </td>
+   <td style="text-align:right;"> 1.349 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> May </td>
+   <td style="text-align:right;"> 0.896 </td>
+   <td style="text-align:right;"> 0.440 </td>
+   <td style="text-align:right;"> 1.822 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Jun </td>
+   <td style="text-align:right;"> 1.806 </td>
+   <td style="text-align:right;"> 0.897 </td>
+   <td style="text-align:right;"> 3.644 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Jul </td>
+   <td style="text-align:right;"> 2.812 </td>
+   <td style="text-align:right;"> 1.425 </td>
+   <td style="text-align:right;"> 5.568 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Aug </td>
+   <td style="text-align:right;"> 4.063 </td>
+   <td style="text-align:right;"> 1.660 </td>
+   <td style="text-align:right;"> 10.014 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Sep </td>
+   <td style="text-align:right;"> 4.865 </td>
+   <td style="text-align:right;"> 1.885 </td>
+   <td style="text-align:right;"> 12.680 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Oct </td>
+   <td style="text-align:right;"> 11.646 </td>
+   <td style="text-align:right;"> 4.953 </td>
+   <td style="text-align:right;"> 27.550 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Nov </td>
+   <td style="text-align:right;"> 6.952 </td>
+   <td style="text-align:right;"> 3.401 </td>
+   <td style="text-align:right;"> 14.253 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Dec </td>
+   <td style="text-align:right;"> 3.284 </td>
+   <td style="text-align:right;"> 1.929 </td>
+   <td style="text-align:right;"> 5.590 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> time:groupIntervention </td>
+   <td style="text-align:right;"> 1.114 </td>
+   <td style="text-align:right;"> 1.007 </td>
+   <td style="text-align:right;"> 1.232 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> groupIntervention:time_post </td>
+   <td style="text-align:right;"> 0.903 </td>
+   <td style="text-align:right;"> 0.815 </td>
+   <td style="text-align:right;"> 1.000 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> groupIntervention:post </td>
+   <td style="text-align:right;"> 0.081 </td>
+   <td style="text-align:right;"> 0.033 </td>
+   <td style="text-align:right;"> 0.197 </td>
+  </tr>
+</tbody>
+</table>
+
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>counterfactualc <span class="ot">=</span> c_data <span class="sc">%&gt;%</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_cols</span>(modelc2<span class="sc">$</span>summary.fitted.values) <span class="sc">%&gt;%</span> <span class="co">#Join predicted case counts to data</span></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(post<span class="sc">==</span><span class="dv">1</span>) <span class="sc">%&gt;%</span> <span class="co">#Restrict to the post period</span></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">log_mean =</span> <span class="fu">log</span>(mean), <span class="co">#Convert estimates back to log scale</span></span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>         <span class="at">counterfactual_cases =</span> <span class="fu">exp</span>(log_mean <span class="sc">-</span></span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>                                      <span class="fu">summary</span>(modelc2)[[<span class="dv">3</span>]][<span class="st">"time_post"</span>,<span class="st">"mean"</span>] <span class="sc">*</span> time_post <span class="sc">-</span></span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a>                                      <span class="fu">summary</span>(modelc2)[[<span class="dv">3</span>]][<span class="st">"post"</span>,<span class="st">"mean"</span>] <span class="sc">*</span> post)) <span class="sc">%&gt;%</span></span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">counterfactual_cases =</span> <span class="fu">sum</span>(counterfactual_cases),</span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a>            <span class="at">estimated_cases =</span> <span class="fu">sum</span>(mean))</span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a>counterfactualc<span class="sc">$</span>counterfactual_cases <span class="sc">-</span> counterfactualc<span class="sc">$</span>estimated_cases <span class="co">#Cases decreased </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] -3933.942</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>(counterfactualc<span class="sc">$</span>counterfactual_cases <span class="sc">-</span> counterfactualc<span class="sc">$</span>estimated_cases)<span class="sc">/</span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>  counterfactualc<span class="sc">$</span>estimated_cases <span class="sc">*</span> <span class="dv">100</span> <span class="co">#Percent reduction (92%)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] -92.87062</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(c_data <span class="sc">%&gt;%</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>         <span class="fu">bind_cols</span>(modelc2<span class="sc">$</span>summary.fitted.values) <span class="sc">%&gt;%</span> <span class="co">#Join predicted case counts to data</span></span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>         <span class="fu">mutate</span>(<span class="at">log_mean =</span> <span class="fu">log</span>(mean), <span class="co">#Convert estimates back to log scale</span></span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>                <span class="at">counterfactual_cases =</span> <span class="fu">exp</span>(log_mean <span class="sc">-</span></span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>                                      <span class="fu">summary</span>(modelc2)[[<span class="dv">3</span>]][<span class="st">"time_post"</span>,<span class="st">"mean"</span>] <span class="sc">*</span> time_post <span class="sc">-</span></span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>                                      <span class="fu">summary</span>(modelc2)[[<span class="dv">3</span>]][<span class="st">"post"</span>,<span class="st">"mean"</span>] <span class="sc">*</span> post)) <span class="sc">%&gt;%</span></span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a>         <span class="fu">group_by</span>(time) <span class="sc">%&gt;%</span></span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a>         <span class="fu">summarise</span>(<span class="at">incidence =</span> <span class="fu">sum</span>(cases)<span class="sc">/</span><span class="fu">sum</span>(population)<span class="sc">*</span><span class="dv">1000</span>,</span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a>                   <span class="at">estimated_incidence =</span> <span class="fu">sum</span>(mean)<span class="sc">/</span><span class="fu">sum</span>(population)<span class="sc">*</span><span class="dv">1000</span>,</span>
+<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a>                   <span class="at">counterfactual_incidence =</span> <span class="fu">sum</span>(counterfactual_cases)<span class="sc">/</span><span class="fu">sum</span>(population)<span class="sc">*</span><span class="dv">1000</span>)) <span class="sc">+</span></span>
+<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x =</span> time, <span class="at">y =</span> counterfactual_incidence, <span class="at">color =</span> <span class="st">"Counterfactual"</span>)) <span class="sc">+</span></span>
+<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x =</span> time, <span class="at">y =</span> estimated_incidence, <span class="at">color =</span> <span class="st">"Estimated"</span>)) <span class="sc">+</span></span>
+<span id="cb37-13"><a href="#cb37-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x =</span> time, <span class="at">y =</span> incidence, <span class="at">color =</span> <span class="st">"Observed"</span>)) <span class="sc">+</span></span>
+<span id="cb37-14"><a href="#cb37-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="fu">aes</span>(<span class="at">xintercept =</span> <span class="dv">12</span>, <span class="at">linetype =</span> <span class="st">"MTAT roll-out"</span>)) <span class="sc">+</span></span>
+<span id="cb37-15"><a href="#cb37-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Monthly incidence per 1,000 population"</span>, <span class="at">linetype =</span> <span class="st">""</span>, <span class="at">color =</span> <span class="st">"Incidence"</span>,</span>
+<span id="cb37-16"><a href="#cb37-16" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Incidence"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="ITS_files/figure-html/Counterfactual%20plot%20for%20contrelled%20ITS-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

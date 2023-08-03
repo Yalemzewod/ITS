@@ -1,0 +1,246 @@
+---
+title: "Standard and Controlled ITS Analysis Examples"
+author: "Ellen Ferriss"
+date: "2023-04-03"
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
+---
+
+This R markdown is a guide for setting up a 1) standard interrupted time series analysis. The 2014 mass test-and-treat campaign, followed by focal test-and-treat through 2018, for malaria control is taken as a motivating example. Intervention impact is estimated from six village data in Amhara region, Ethiopia using the INLA package; however any package that accounts for correlation, e.g., geepack or lme4 could be used.
+
+```{r, clear working directory, include=FALSE}
+rm(list = ls())
+```
+
+```{r,only for first use,  include=FALSE}
+#install.packages("INLA", repos = "https://inla.r-inla-download.org/R/stable", dep = TRUE)
+```
+
+Load packages (if required)
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval = TRUE, include = TRUE)
+library(tidyverse) # data management
+library(readxl) # read xls file
+library(hablar) # convert variable type
+library(janitor) # clean names
+library(INLA) # modelling
+library(lubridate) # date
+library(zoo) # irregular time
+```
+
+## Controlled ITS
+
+For this model, there are 12 villages total, 6 in each the intervention and control groups. Villages are observed for 61 months, and the intervention rolled-out at month 12 (Sept 2014) in all intervention villages. Villages leveled in two groups (control or intervention), months since the beginning of the study (time), a spline term for months since the beginning of the intervention, a pre/post indicator variable, and malaria cases. Our exposures of interest are the interactions of group with the 1) post-intervention period and 2) time since the intervention.
+
+```{r, Load datatsets for standard ITS, message=FALSE,warning=FALSE,echo=FALSE}
+
+m_data = read_excel("~/MELKAMU_ITS/ITS_Data.xlsx") %>%
+ clean_names() %>% 
+          mutate(id = rep(1:12, each = 61),
+         time = rep(c(0:60), 12),
+         time_post = if_else(time<12, 0, time-12), 
+         #Time spline for post-intervention period
+         post = if_else(time<12, 0, 1),
+         date=  as.Date(as.yearmon(period)))
+```
+
+Inspect the data structure and variable lists
+```{r, check colnames, message=FALSE, warning=FALSE}
+glimpse(m_data)
+```
+
+```{r Visualize data for standard ITS, message=FALSE}
+ggplot(m_data %>%
+         group_by(time) %>%
+         summarise(incidence = sum(cases)/sum(population)*1000)) +
+  geom_line(aes(x = time, y = incidence)) +
+  geom_vline(aes(xintercept = 12, linetype = "MTAT roll-out"), color = "green") +
+  labs(title = "Monthly incidence per 1,000 population", linetype = "",
+       y = "Incidence", x = "Months since beginning of the study")
+```
+
+We estimate monthly incidence rates, assuming a negative binomial distribution, using the log population as an offset, with random intercepts for each village (IID) and the month of observation (AR-1). A 168% increase in incidence is estimated immediately following roll-out with an additional 18% increase per month thereafter, compared to baseline.
+
+```{r, Regression model for standard ITS, message=FALSE, warning=FALSE}
+# build a model
+model = inla(cases ~ time + time_post + post + stratum + I(lag(evi)) + 
+               I(lag(rainfall)) +
+               I(lag(lst_night)) +
+               I(lag(lst_day)) +
+               I(as.factor(month(date))) + 
+               offset(log(population)) + 
+               f(time2, model = "ar1") + f(id, model = "iid"),
+               # model fitness & comparison
+               control.compute=list(dic=TRUE,cpo=TRUE,  waic = TRUE),
+               family = "nbinomial", data = m_data%>%
+               mutate(time2 = time))
+```
+
+look at the parameter estimates of the model
+
+```{r, model_summary, warning=FALSE, message=FALSE, include=FALSE}
+summary(model)
+```
+
+
+```{r, Regression model for standard ITS, message=FALSE, warning=FALSE}
+# save the model results in data frame
+results = exp(summary(model)[[3]])[,c(1,3,5)] %>% 
+  round(3) %>% 
+  as.data.frame()
+
+colnames(results) = c("Incidence rate ratio", "2.5th quantile, IRR", "97.5th quantile, IRR")
+rownames(results) = c("Intercept", "Months since study beginning", "Months since MTAT", "Stratum2b", "Stratum3",
+                      "Post period", "1-month lagged EVI", "1-month lagged rainfall", 
+                      "1-month lagged night temp", "1-month lagged day temp",
+                      "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+kableExtra::kable(results, booktabs = T)
+
+```
+
+Next, we conduct a counter factual analysis to estimate how many additional cases would have been observed if not for the intervention. We take the number of cases estimated by the regression model, convert them back to log-scale so that we can subtract off the effects associated with the level and trend changes (regression coefficients), then exponeniate the total to get the counterfactual number of cases. Following intervention roll-out, the counterfactual will be exp(log(β Intercept + β time * (months since study beginning) + β time_post * (months since roll-out) + β post * 1 - β time_post * (months since roll-out) - β post * 1)), which simplifies to exp(log(β Intercept + β time * (months since study beginning))). Counterfactual observations exceed the estimated number of cases by exp(log(-β time_post * (months since roll-out) - β post * 1)). In our example, the intervention caused 1,547 cases!
+
+```{r, Counterfactual estimate, message=FALSE, warning=FALSE}
+counterfactual = m_data %>%
+  bind_cols(model$summary.fitted.values) %>% #Join predicted case counts to data
+  filter(post==1) %>% #Restrict to the post period
+  mutate(log_mean = log(mean), #Convert estimates back to log scale
+         counterfactual_cases = exp(log_mean -
+                                      summary(model)[[3]]["time_post","mean"] * time_post -
+                                      summary(model)[[3]]["post","mean"] * post)) %>%
+  summarise(counterfactual_cases = sum(counterfactual_cases),
+            estimated_cases = sum(mean))
+
+counterfactual$counterfactual_cases - counterfactual$estimated_cases #Cases averted
+(counterfactual$counterfactual_cases - counterfactual$estimated_cases)/counterfactual$estimated_cases * 100 #Percent reduction
+```
+
+
+```{r, Counterfactual plot, message=FALSE, warning=FALSE}
+ggplot(m_data %>%
+         bind_cols(model$summary.fitted.values) %>% #Join predicted case counts to data
+         mutate(log_mean = log(mean), #Convert estimates back to log scale
+                counterfactual_cases = exp(log_mean -
+                                      summary(model)[[3]]["time_post","mean"] * time_post -
+                                      summary(model)[[3]]["post","mean"] * post)) %>%
+         group_by(time) %>%
+         summarise(incidence = sum(cases)/sum(population)*1000,
+                   estimated_incidence = sum(mean)/sum(population)*1000,
+                   counterfactual_incidence = sum(counterfactual_cases)/sum(population)*1000)) +
+  geom_line(aes(x = time, y = counterfactual_incidence, color = "Counterfactual")) +
+  geom_line(aes(x = time, y = estimated_incidence, color = "Estimated")) +
+  geom_line(aes(x = time, y = incidence, color = "Observed")) +
+  geom_vline(aes(xintercept = 12, linetype = "MTAT roll-out")) +
+  labs(title = "Monthly incidence per 1,000 population", linetype = "", color = "Incidence",
+       y = "Incidence")
+```
+
+Controlled ITS
+```{r, Regression model for controlled ITS, message=FALSE, warning=FALSE}
+model2 = inla(cases ~ time*group + time_post*group + post*group +
+                I(lag(evi)) + I(lag(rainfall)) +
+               I(lag(lst_night)) + I(lag(lst_day)) +
+               I(as.factor(month(date))) + offset(log(population)) + 
+               f(time2, model = "ar1") + f(id, model = "iid"),
+              # model fitness & comparison
+               control.compute=list(dic=TRUE,cpo=TRUE,  waic = TRUE),
+               family = "nbinomial",
+               data = data %>%
+               mutate(time2 = time))
+```
+
+Inspect model outputs
+```{r, model_output, message=FALSE, warning=FALSE, include=FALSE}
+# model outputs
+summary(model2)
+```
+
+```{r, Regression model summary for controlled ITS, message=FALSE, warning=FALSE}
+
+results2 = exp(summary(model2)[[3]])[,c(1,3,5)] %>% 
+  round(3) %>% 
+  as.data.frame()
+
+colnames(results) = c("Incidence rate ratio", "2.5th quantile, IRR", "97.5th quantile, IRR")
+
+kableExtra::kable(results2, booktabs = T)
+
+```
+
+
+```{r, conterfactual estimates for controlled ITS, message=FALSE, warning=FALSE}
+  counterfactual2 = data %>%
+  bind_cols(model2$summary.fitted.values) %>% #Join predicted case counts to data
+  filter(post==1) %>% #Restrict to the post period
+  mutate(log_mean = log(mean), #Convert estimates back to log scale
+         counterfactual_cases = exp(log_mean -
+                                      summary(model)[[3]]["time_post","mean"] * time_post -
+                                      summary(model)[[3]]["post","mean"] * post)) %>%
+  summarise(counterfactual_cases = sum(counterfactual_cases),
+            estimated_cases = sum(mean))
+
+counterfactual2$counterfactual_cases - counterfactual2$estimated_cases #Cases averted
+```
+```{r, Counterfactual plot for contrelled ITS, message=FALSE, warning=FALSE}
+ggplot(data %>%
+         bind_cols(model2$summary.fitted.values) %>% #Join predicted case counts to data
+         mutate(log_mean = log(mean), #Convert estimates back to log scale
+                counterfactual_cases = exp(log_mean -
+                                      summary(model)[[3]]["time_post","mean"] * time_post -
+                                      summary(model)[[3]]["post","mean"] * post)) %>%
+         group_by(time) %>%
+         summarise(incidence = sum(cases)/sum(population)*1000,
+                   estimated_incidence = sum(mean)/sum(population)*1000,
+                   counterfactual_incidence = sum(counterfactual_cases)/sum(population)*1000)) +
+  geom_line(aes(x = time, y = counterfactual_incidence, color = "Counterfactual")) +
+  geom_line(aes(x = time, y = estimated_incidence, color = "Estimated")) +
+  geom_line(aes(x = time, y = incidence, color = "Observed")) +
+  geom_vline(aes(xintercept = 12, linetype = "MTAT roll-out")) +
+  labs(title = "Monthly incidence per 1,000 population", linetype = "", color = "Incidence",
+       y = "Incidence")
+```
+
+**Model comparison: DIC, CPO and/or PIT**
+
+Deviance information criterion (DIC) - the smallest the DIC indicates the best fit model.
+
+```{r}
+model$dic$dic  #974.0282
+model2$dic$dic #936.6957
+```
+
+```{r, cpo_standard, message=FALSE, warning=FALSE}
+# Standard ITS (stis)
+cpo.stis <- model$cpo$cpo # conditional predictive ordinate
+standardITS <- sum(log(cpo.stis))
+standardITS # -557.4907
+```
+
+
+```{r, cpo_control, message=FALSE, warning=FALSE}
+# Controlled ITS (ctis)
+cpo.ctis <- model2$cpo$cpo # conditional predictive ordinate
+
+controlITS <- sum(log(cpo.ctis))
+
+controlITS # -542.5143
+```
+
+A histogram of PIT must resemble a uniform distribution;extreme values indicate outlying observations.
+
+```{r, PIT_stis,  message=FALSE, warning=FALSE}
+# probability integral transform (PIT)
+pit.stis <- model$cpo$pit
+
+hist(pit.stis,main =" ", ylab="frequency")
+```
+
+```{r,  PIT_ctis,  message=FALSE, warning=FALSE}
+pit.ctis <- model2$cpo$pit
+
+hist(pit.ctis,main =" ", ylab="frequency")
+```
+

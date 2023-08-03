@@ -1,0 +1,729 @@
+---
+title: "ITS Analysis"
+format: docx
+editor: visual
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+---
+
+## About this script
+
+This script was crafted using Ellen's example codes. The script has three sections:
+
+1.  Data info
+
+2.  Exploration
+
+3.  Model fit
+
+```{r, clear_WD, include=FALSE}
+rm(list = ls())
+```
+
+Install and/or load packages if required
+
+```{r, load packages, warning=FALSE, message=FALSE, include=FALSE}
+knitr::opts_chunk$set(eval = TRUE, include = TRUE)
+#for first use only
+#install.packages("INLA",repos = "https://inla.r-inla-download.org/R/stable", dep = TRUE) 
+library(tidyverse) # data management
+library(readxl) # read xls file
+library(hablar) # convert variable type
+library(janitor) # clean names
+library(INLA) # modelling
+library(lubridate) # date
+library(zoo) # irregular time
+```
+
+## Standard ITS
+
+The data was aggregated monthly from 2013 to 2018 at the village level in Amhara Region, Ethiopia. The below code will read the data from the `xlsx` file. The intervention took a 2014 mass test-and-treat campaign for malaria control, followed by focal test-and-treat through 2017. Intervention impact is estimated using the INLA package.
+
+**Case data**: There are 6 villages, all intervention groups. Villages are observed for 61 months and incidence cases were captured each month.
+
+**Intervention (MTAT)**: the intervention rolled out on month 13 (Sept 2014) in all intervention villages. Intervention villages are filtered for standard ITS.
+
+```{r, Load datatsets for standard ITS, message=FALSE,warning=FALSE,echo=FALSE}
+s_data = read_excel("~/MELKAMU_ITS/ITS_Data.xlsx") %>%
+ clean_names() %>% 
+  filter(group =="Intervention") %>% 
+          mutate(id = rep(1:6, each = 61),
+          time = rep(c(0:60), 6), # add time column
+        
+         #Time spline for post-intervention period
+         time_post = if_else(time<12, 0, time-12), 
+         post = if_else(time<12, 0, 1),
+         date=  as.Date(as.yearmon(period))) %>% 
+         select(-group)
+
+```
+
+Inspect the data structure and variable lists
+
+```{r, message=FALSE, warning=FALSE, echo=FALSE, eval=FALSE}
+s_data %>% 
+  glimpse()
+```
+
+## Standard ITS - Exploratory
+
+```{r, Visualize data for standard ITS, message=FALSE, echo=FALSE}
+ggplot(s_data %>%
+         group_by(time) %>%
+         summarise(incidence = sum(cases)/sum(population)*1000)) +
+  geom_line(aes(x = time, y = incidence)) +
+  geom_vline(aes(xintercept = 12, linetype = "MTAT roll-out"), color = "green") +
+  labs(title = "Monthly incidence per 1,000 population", linetype = "",
+       y = "Incidence", x = "Months since beginning of the study")+
+  theme_bw()
+```
+
+## Standard ITS - Modelling
+
+Monthly incidence rate estimates assuming a negative binomial distribution, using the log population as an offset, with stratum as a fixed effect, random intercepts for each village (IID), and the month of observation (AR-1). To incorporate lagged environmental factors, a lagged 0 - 3 was created from the original **`evi, rainfall, lst_nigth, and lst_day`** variables, using the **`lag()`** function. We fitted four models: covariate-only model, lag0. lag1 and lag3. The table below showed that a model with lag 2 has a low dic value.
+
+```{r, message=FALSE, warning=FALSE, echo=FALSE}
+s_data <- s_data %>% 
+  mutate(evi_lag0 = lag(evi, 0),
+         evi_lag1 = lag(evi, 1),
+         evi_lag2 = lag(evi, 2),
+         evi_lag3 = lag(evi, 3),
+         rainfall_lag0 = lag(rainfall, 0),
+         rainfall_lag1 = lag(rainfall, 1),
+         rainfall_lag2 = lag(rainfall, 2),
+         rainfall_lag3 = lag(rainfall, 3),
+         night_lag0 = lag(lst_night, 0),
+         night_lag1 = lag(lst_night, 1),
+         night_lag2 = lag(lst_night, 2),
+         night_lag3 = lag(lst_night, 3),
+         day_lag0 = lag(lst_day, 0),
+         day_lag1 = lag(lst_day, 1),
+         day_lag2 = lag(lst_day, 2),
+         day_lag3 = lag(lst_day, 3)) 
+```
+
+```{r, Regression_model_STIS, message=FALSE, warning=FALSE, echo=FALSE}
+# build a model - only covariate
+
+modelcov = inla(cases ~ evi + rainfall + lst_night + lst_day + 
+                  offset(log(population)),
+                control.compute=list(dic=TRUE,cpo=TRUE,  waic = TRUE),
+                 family = "nbinomial", data = s_data)
+
+# lag 0
+models0 = inla(cases ~ time + time_post + post + stratum + 
+               evi_lag0 +  rainfall_lag0  + night_lag0 + day_lag0 +
+               I(as.factor(month(date))) + 
+               offset(log(population)) + 
+               f(time2, model = "ar1") + f(id, model = "iid"),
+               # model fitness & comparison
+               control.compute=list(dic=TRUE,cpo=TRUE,  waic = TRUE),
+               family = "nbinomial", data = s_data%>%
+               mutate(time2 = time))
+
+# lag 1
+models1 = inla(cases ~ time + time_post + post + stratum + 
+                evi_lag1 +  
+               rainfall_lag1 +
+               night_lag1 + day_lag1 +
+               I(as.factor(month(date))) + 
+               offset(log(population)) + 
+               f(time2, model = "ar1") + f(id, model = "iid"),
+               # model fitness & comparison
+               control.compute=list(dic=TRUE,cpo=TRUE,  waic = TRUE),
+               family = "nbinomial", data = s_data%>%
+               mutate(time2 = time))
+
+
+# lag 2
+models2 = inla(cases ~ time + time_post + post + stratum + 
+               evi_lag2 +  
+               rainfall_lag2 + 
+               night_lag2 + day_lag2 +
+               I(as.factor(month(date))) + 
+               offset(log(population)) + 
+               f(time2, model = "ar1") + f(id, model = "iid"),
+               # model fitness & comparison
+               control.compute=list(dic=TRUE,cpo=TRUE,  waic = TRUE),
+               family = "nbinomial", data = s_data%>%
+               mutate(time2 = time))
+
+# lag3
+models3 = inla(cases ~ time + time_post + post + stratum + 
+               evi_lag3 +
+               rainfall_lag3 +
+               night_lag3 + day_lag3+
+               I(as.factor(month(date))) + 
+               offset(log(population)) + 
+               f(time2, model = "ar1") + f(id, model = "iid"),
+               # model fitness & comparison
+               control.compute=list(dic=TRUE,cpo=TRUE,  waic = TRUE),
+               family = "nbinomial", data = s_data%>%
+               mutate(time2 = time))
+
+# no covariate
+modelnoc = inla(cases ~ time + time_post + post + stratum + 
+               I(as.factor(month(date))) + 
+               offset(log(population)) + 
+               f(time2, model = "ar1") + f(id, model = "iid"),
+               # model fitness & comparison
+               control.compute=list(dic=TRUE,cpo=TRUE,  waic = TRUE),
+               family = "nbinomial", data = s_data%>%
+               mutate(time2 = time))
+
+# save dic
+dic <- c(modelcov$dic$dic,models0$dic$dic, models1$dic$dic,models2$dic$dic,models3$dic$dic, modelnoc$dic$dic)
+
+model <- c("covariate_only","lag0", "lag1", "lag2", "lag3", "nocov")
+stis <- tibble(model, dic)
+kableExtra::kable(stis, booktabs = T)
+```
+
+Standard ITS model - startum as random effect
+
+```{r, stis_random_st, message=FALSE, warning=FALSE, echo=FALSE}
+# build a model - only covariate
+
+# lag 0
+models0s = inla(cases ~ time + time_post + post + 
+                 evi_lag0 +  rainfall_lag0  + night_lag0 + day_lag0 +
+               I(as.factor(month(date))) + 
+               offset(log(population)) + 
+              f(stratum, model = "ar1") +
+               f(time2, model = "ar1") + f(id, model = "iid"),
+               # model fitness & comparison
+               control.compute=list(dic=TRUE,cpo=TRUE,  waic = TRUE),
+               family = "nbinomial", data = s_data%>%
+               mutate(time2 = time))
+
+# lag 1
+models1s = inla(cases ~ time + time_post + post + 
+                evi_lag1 +  
+               rainfall_lag1 +
+               night_lag1 + day_lag1 +
+               I(as.factor(month(date))) + 
+               offset(log(population)) + 
+                f(stratum, model = "ar1") +
+               f(time2, model = "ar1") + f(id, model = "iid"),
+               # model fitness & comparison
+               control.compute=list(dic=TRUE,cpo=TRUE,  waic = TRUE),
+               family = "nbinomial", data = s_data%>%
+               mutate(time2 = time))
+
+
+# lag 2
+models2s = inla(cases ~ time + time_post + post +  
+               evi_lag2 +  
+               rainfall_lag2 + 
+               night_lag2 + day_lag2 +
+               I(as.factor(month(date))) + 
+               offset(log(population)) + 
+                f(stratum, model = "ar1") +
+               f(time2, model = "ar1") + f(id, model = "iid"),
+               # model fitness & comparison
+               control.compute=list(dic=TRUE,cpo=TRUE,  waic = TRUE),
+               family = "nbinomial", data = s_data%>%
+               mutate(time2 = time))
+
+# lag3
+models3s = inla(cases ~ time + time_post + post + 
+               evi_lag3 +
+               rainfall_lag3 +
+               night_lag3 + day_lag3+
+               I(as.factor(month(date))) + 
+               offset(log(population)) + 
+                f(stratum, model = "ar1") +
+               f(time2, model = "ar1") + f(id, model = "iid"),
+               # model fitness & comparison
+               control.compute=list(dic=TRUE,cpo=TRUE,  waic = TRUE),
+               family = "nbinomial", data = s_data%>%
+               mutate(time2 = time))
+
+# no covariate
+modelnocs = inla(cases ~ time + time_post + post + 
+               I(as.factor(month(date))) + 
+               offset(log(population)) + 
+               f(stratum, model = "ar1") +
+               f(time2, model = "ar1") + f(id, model = "iid"),
+               # model fitness & comparison
+               control.compute=list(dic=TRUE,cpo=TRUE,  waic = TRUE),
+               family = "nbinomial", data = s_data%>%
+               mutate(time2 = time))
+
+# save dic
+dic <- c(models0s$dic$dic, models1s$dic$dic,models2s$dic$dic,models3s$dic$dic, modelnocs$dic$dic)
+
+model <- c("lag0", "lag1", "lag2", "lag3", "nocov")
+stiss <- tibble(model, dic)
+kableExtra::kable(stiss, booktabs = T)
+```
+
+Save the model results in data frame
+
+```{r,save_result, message=FALSE,warning=FALSE, echo=FALSE}
+# save the model results in data frame
+results = exp(summary(models2s)[[3]])[,c(1,3,5)] %>% 
+  round(3) %>% 
+  as.data.frame()
+
+colnames(results) = c("Incidence rate ratio", "2.5th quantile, IRR", "97.5th quantile, IRR")
+
+rownames(results) = c("Intercept", "Months since study beginning", "Months since MTAT","Post_MTAT_period",  "2-month lagged EVI", "2-month lagged rainfall", "2-month lagged night temp", "2-month lagged day temp","Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+kableExtra::kable(results, booktabs = T)
+```
+
+**Model 2 result interpretation**.
+
+The intercept, which represents the estimated incidence rate ratio when all other variables are at their reference levels, does not show a significant association with the outcome. The uncertainty intervals for the intercept include the value 1, indicating a lack of evidence for a significant effect.
+
+Regarding the months since the study began and months since MTAT, there is some evidence of a slight increase in the incidence rate with an increase in these variables. However, the uncertainty intervals include the value 1, suggesting that the associations may not be statistically significant.
+
+During the post-MTAT period, there is evidence to suggest a lower estimated incidence rate compared to the pre-MTAT period. The uncertainty intervals for the post-MTAT period exclude the value 1, indicating a significant association.
+
+When examining the variables Stratum2b and Stratum3, the estimated incidence rate ratios suggest different levels of association with the outcome. Stratum 2 b has a relatively smaller association, while Stratum 3 shows a significantly higher estimated incidence rate ratio. The uncertainty intervals for Stratum 3 indicate high variability, indicating the small sample size though it's statistically significant association.
+
+The environmental factors, such as 2-month lagged EVI, rainfall, night temperature, and day temperature, show varying levels of association with the outcome. The estimated incidence rate ratios suggest their impact on the outcome, but the uncertainty intervals indicate some uncertainty in the estimates.
+
+Finally, for the different months or time periods, some months show lower estimated incidence rates (e.g., February, April, May, and June), while others exhibit higher estimated incidence rates (e.g., July, August, September, October, November, and December). The uncertainty intervals can provide further information on the significance of these associations.
+
+```{r,save_result_f, warning=FALSE, message=FALSE, echo=FALSE}
+# save the model results in data frame
+results = exp(summary(models2)[[3]])[,c(1,3,5)] %>% 
+  round(3) %>% 
+  as.data.frame()
+
+colnames(results) = c("Incidence rate ratio", "2.5th quantile, IRR", "97.5th quantile, IRR")
+rownames(results) = c("Intercept", "Months since study beginning", "Months since MTAT","Post_MTAT_period", "Stratum2b", "Stratum3", "2-month lagged EVI", "2-month lagged rainfall", "2-month lagged night temp", "2-month lagged day temp",                      "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+kableExtra::kable(results, booktabs = T)
+```
+
+A counterfactual analysis is below to estimate how many additional cases would have been observed if not for the intervention. To accomplish this, we convert the predicted case counts, which are labelled `mean` in `models$summary.fitted.values`, back to the log scale so that we can remove the effects associated with the intervention. Specifically, the regression coefficient for the post-intervention period (level change) and time since intervention roll-out (trend change), multiplied by time since roll-out, are subtracted. Now, we have counterfactual case counts in log-scale, which we can exponentiate to get counterfactual cases. In our data, cases declined by 769, or a 35% decrease, during the MTAT/FTAT period.
+
+```{r, Counterfactual_estimate, message=FALSE, warning=FALSE, echo=FALSE, eval=FALSE}
+
+counterfactual = s_data %>%
+  bind_cols(models3$summary.fitted.values) %>% #Join predicted case counts to data
+  filter(post==1) %>% #Restrict to the post period
+  mutate(log_mean = log(mean), #Convert estimates back to log scale
+         counterfactual_cases = exp(log_mean -
+                                      summary(models3)[[3]]["time_post","mean"] * time_post -
+                                      summary(models3)[[3]]["post","mean"] * post)) %>%
+  summarise(counterfactual_cases = sum(counterfactual_cases),
+            estimated_cases = sum(mean))
+
+counterfactual$counterfactual_cases - counterfactual$estimated_cases #Cases averted
+(counterfactual$counterfactual_cases - counterfactual$estimated_cases)/counterfactual$estimated_cases*100 #Percent reduction
+
+```
+
+Counter-factual plot
+
+```{r,  Counterfactual_plot, message=FALSE, warning=FALSE, warning=FALSE, echo=FALSE}
+ggplot(s_data %>%
+         bind_cols(models3$summary.fitted.values) %>% #Join predicted case counts to data
+         mutate(log_mean = log(mean), #Convert estimates back to log scale
+                counterfactual_cases = exp(log_mean -
+                                      summary(models3)[[3]]["time_post","mean"] * time_post -
+                                      summary(models3)[[3]]["post","mean"] * post)) %>%
+         group_by(time) %>%
+         summarise(incidence = sum(cases)/sum(population)*1000,
+                   estimated_incidence = sum(mean)/sum(population)*1000,
+                   counterfactual_incidence = sum(counterfactual_cases)/sum(population)*1000)) +
+  geom_line(aes(x = time, y = counterfactual_incidence, color = "Counterfactual")) +
+  geom_line(aes(x = time, y = estimated_incidence, color = "Estimated")) +
+  geom_line(aes(x = time, y = incidence, color = "Observed")) +
+  geom_vline(aes(xintercept = 12, linetype = "MTAT roll-out")) +
+  labs(title = "Monthly incidence per 1,000 population", linetype = "", color = "Incidence",
+       y = "Incidence")
+```
+
+# **Controlled ITS**
+
+The data was aggregated monthly from 2013 to 2018 at the village level in Amhara Region, Ethiopia. The code provided below will read the data from the specified `.xlsx file` (e.g., "filename.xlsx") and the corresponding sheet name (if applicable). The purpose of this analysis is to conduct a controlled interrupted time series analysis in R, focusing on a mass test-and-treat campaign in 2014 (MTAT), followed by focal test-and-treat interventions until 2017 for malaria control. The intervention impact will be estimated using the Integrated Nested Laplace Approximation (INLA) package.
+
+**Case data**: The study includes a total of 12 villages, with 6 villages assigned to the intervention group and 6 to the control group. These villages were observed for 61 months, and the incidence cases were captured monthly.
+
+**Intervention (MTAT)**: The intervention was implemented in all intervention villages in September 2014 (month 13). The villages were divided into two groups: control and intervention.
+
+**Time**: Time is defined in months. In the dataset, there are three-time variables: (1) time since the beginning of the study, a spline term representing months since the beginning of the intervention, (2) time_post spline representing the post-intervention period, and (3) a post-indicator to determine observations following the intervention roll-out. Our exposures of interest are the interactions of the group with (1) the post-intervention period and (2) the time since the intervention.
+
+**Covariates**: The analysis includes environmental data extracted from the Malaria Atlas Project database, such as evi, daylight temp, night light temp, and rainfall. Additionally, intervention data related to vector control measures, including Long-Lasting Insecticidal Nets (LLINs) and Indoor Residual Spraying (IRS), are considered covariates.
+
+```{r, read data for controlled_ITS, message=FALSE,warning=FALSE,echo=FALSE}
+c_data = read_excel("~/MELKAMU_ITS/ITS_Data.xlsx") %>%
+ clean_names() %>% 
+  convert(fct(stratum)) %>% 
+          mutate(id = rep(1:12, each = 61),
+         time = rep(c(0:60), 12),
+         time_post = if_else(time<12, 0, time-12), 
+         #Time spline for post-intervention period
+         post = if_else(time<12, 0, 1),
+         date=  as.Date(as.yearmon(period)))
+```
+
+Incidence plot: Intervention vs control
+
+```{r, Visualize data, message=FALSE, warning=FALSE, echo=FALSE}
+ggplot(c_data %>%
+         group_by(group, time) %>%
+         summarise(incidence = sum(cases)/sum(population)*1000)) +
+  geom_line(aes(x = time, y = incidence, color = group)) +
+  geom_vline(aes(xintercept = 12, linetype = "MTAT roll-out")) +
+  labs(title = "Monthly incidence per 1,000 population", linetype = "",
+       y = "Incidence", x = "Months since beginning of the study", color = "Intervention status")
+```
+
+We estimate monthly incidence rates, assuming a negative binomial distribution, using log population as an offset with, `fixed effects of stratum`, random intercepts for each village (IID) and the month of observation (AR-1). Interaction terms are used to estimate the relative change in incidence rates in intervention areas compared to control areas 1) immediately following MTAT (level change) and 2) each additional month thereafter (trend change). Similar to the SITS, we fitted four different models and a model with lag 2 showed low dic.
+
+```{r, stratum as fixed effect, message=FALSE, warning=FALSE, include=FALSE}
+# add lag variable into the data
+c_data <- c_data %>% 
+  mutate(evi_lag0 = lag(evi, 0),
+         evi_lag1 = lag(evi, 1),
+         evi_lag2 = lag(evi, 2),
+         evi_lag3 = lag(evi, 3),
+         rainfall_lag0 = lag(rainfall, 0),
+         rainfall_lag1 = lag(rainfall, 1),
+         rainfall_lag2 = lag(rainfall, 2),
+         rainfall_lag3 = lag(rainfall, 3),
+         night_lag0 = lag(lst_night, 0),
+         night_lag1 = lag(lst_night, 1),
+         night_lag2 = lag(lst_night, 2),
+         night_lag3 = lag(lst_night, 3),
+         day_lag0 = lag(lst_day, 0),
+         day_lag1 = lag(lst_day, 1),
+         day_lag2 = lag(lst_day, 2),
+         day_lag3 = lag(lst_day, 3)) 
+
+# Prior of precision
+prec.prior <- list(prec = list(param = c(0.001, 0.001)))
+
+# lag 0
+modelc0 = inla(cases ~ time*group + time_post*group + post*group + stratum*group +
+               evi_lag0 +
+               rainfall_lag0 +
+               night_lag0 + day_lag0+
+               I(as.factor(month(date))) + 
+               offset(log(population)) + 
+               f(time2, model = "ar1") +
+               f(id, model = "iid", hyper = prec.prior),
+              # model fitness & comparison
+               control.compute=list(dic=TRUE,cpo=TRUE,  waic = TRUE),
+               family = "nbinomial",
+               data = c_data %>%
+               mutate(time2 = time))
+
+# lag 1
+modelc1 = inla(cases ~ time*group + time_post*group + post*group + stratum*group +
+               evi_lag1 +
+               rainfall_lag1 +
+               night_lag1 + day_lag1+
+               I(as.factor(month(date))) + 
+               offset(log(population)) + 
+               f(time2, model = "ar1") +
+               f(id, model = "iid", hyper = prec.prior),
+              # model fitness & comparison
+               control.compute=list(dic=TRUE,cpo=TRUE,  waic = TRUE),
+               family = "nbinomial",
+               data = c_data %>%
+               mutate(time2 = time))
+
+# lag 2
+modelc2 = inla(cases ~ time*group + time_post*group + post*group + stratum*group +
+               evi_lag2 +
+               rainfall_lag2 +
+               night_lag2 + day_lag2+
+               I(as.factor(month(date))) + 
+               offset(log(population)) + 
+               f(time2, model = "ar1") +
+               f(id, model = "iid", hyper = prec.prior),
+              # model fitness & comparison
+               control.compute=list(dic=TRUE,cpo=TRUE,  waic = TRUE),
+               family = "nbinomial",
+               data = c_data %>%
+               mutate(time2 = time))
+
+# lag 3
+modelc3 = inla(cases ~ time*group + time_post*group + post*group + stratum*group +
+               evi_lag3 +
+               rainfall_lag3 +
+               night_lag3 + day_lag3 +
+               I(as.factor(month(date))) + 
+               offset(log(population)) + 
+               f(time2, model = "ar1") +
+               f(id, model = "iid", hyper = prec.prior),
+              # model fitness & comparison
+               control.compute=list(dic=TRUE,cpo=TRUE,  waic = TRUE),
+               family = "nbinomial",
+               data = c_data %>%
+               mutate(time2 = time))
+
+# save dic
+dic <- c(modelc0$dic$dic, modelc1$dic$dic,modelc2$dic$dic,modelc3$dic$dic)
+
+model <- c("lag0", "lag1", "lag2", "lag3")
+ctis <- tibble(model, dic)
+kableExtra::kable(ctis, booktabs = T)
+
+```
+
+Save the model results (stratum as fixed effect) in data frame.
+
+```{r,stratum as fixed effect_result, message=FALSE, warning=FALSE, echo=FALSE}
+# save results - stratum as fixed effect (modelc2)
+# save the model results in data frame
+results = exp(summary(modelc2)[[3]])[,c(1,3,5)] %>% 
+  round(3) %>% 
+  as.data.frame()
+
+
+colnames(results) = c("Incidence rate ratio", "2.5th quantile, IRR", "97.5th quantile, IRR")
+rownames(results) = c("Intercept",
+                      "Months since study beginning",
+                      "Intervention" ,
+                      "Months since MTAT",
+                      "Post period",
+                      "Stratum2b", 
+                      "Stratum3",
+                      "2-month lagged EVI",
+                      "2-month lagged rainfall",
+                      "2-month lagged night temp",
+                      "2-month lagged day temp",
+                      "Feb",
+                      "Mar", 
+                      "Apr",
+                      "May",
+                      "Jun", 
+                      "Jul", 
+                      "Aug",
+                      "Sep",
+                      "Oct", 
+                      "Nov",
+                      "Dec",
+                      "Intervention:time",
+                      "Intervention:time_post",
+                      "Intervention:post",
+                      "Intervention:Stratum2b",
+                      "Intervention:Stratum3")
+
+kableExtra::kable(results, booktabs = T)
+```
+
+A random intercept for each village (IID), the month of observation (AR-1), and stratum (iid)
+
+```{r,stratum as random effect, message=FALSE, warning=FALSE,echo=FALSE}
+
+# lag 0
+modelc20 = inla(cases ~ time*group + time_post*group + post*group +
+                evi_lag0 +
+               rainfall_lag0 +
+               night_lag0 + day_lag0 +
+               I(as.factor(month(date))) +
+                offset(log(population)) + 
+                f(time2, model = "ar1") +
+                f(id, model = "iid",  hyper = prec.prior) +
+                f(stratum, model = "iid",  hyper = prec.prior),
+                # model fitness & comparison
+               control.compute=list(dic=TRUE,cpo=TRUE,  waic = TRUE),
+               family = "nbinomial",
+               data = c_data %>%
+               mutate(time2 = time))
+
+# lag 1
+modelc21 = inla(cases ~ time*group + time_post*group + post*group +
+                evi_lag1 +
+               rainfall_lag1 +
+               night_lag1 + day_lag1 +
+               I(as.factor(month(date))) +
+                offset(log(population)) + 
+                f(time2, model = "ar1") +
+                f(id, model = "iid",  hyper = prec.prior) +
+                f(stratum, model = "iid",  hyper = prec.prior),
+                # model fitness & comparison
+               control.compute=list(dic=TRUE,cpo=TRUE,  waic = TRUE),
+               family = "nbinomial",
+               data = c_data %>%
+               mutate(time2 = time))
+
+# lag 2
+modelc22 = inla(cases ~ time*group + time_post*group + post*group +
+                evi_lag2 +
+               rainfall_lag2 +
+               night_lag2 + day_lag2 +
+               I(as.factor(month(date))) +
+                offset(log(population)) + 
+                f(time2, model = "ar1") +
+                f(id, model = "iid",  hyper = prec.prior) +
+                f(stratum, model = "iid",  hyper = prec.prior),
+                control.predictor=list(link = 1),
+                # model fitness & comparison
+               control.compute=list(dic=TRUE,cpo=TRUE,  waic = TRUE),
+               family = "nbinomial",
+               data = c_data %>%
+               mutate(time2 = time))
+
+# lag 3
+modelc23 = inla(cases ~ time*group + time_post*group + post*group +
+                evi_lag3 +
+               rainfall_lag3 +
+               night_lag3 + day_lag3 +
+               I(as.factor(month(date))) +
+                offset(log(population)) + 
+                f(time2, model = "ar1") +
+                f(id, model = "iid",  hyper = prec.prior) +
+                f(stratum, model = "iid",  hyper = prec.prior),
+                # model fitness & comparison
+               control.compute=list(dic=TRUE,cpo=TRUE,  waic = TRUE),
+               family = "nbinomial",
+               data = c_data %>%
+               mutate(time2 = time))
+
+
+# save dic
+dic <- c(modelc20$dic$dic, modelc21$dic$dic,modelc22$dic$dic,modelc23$dic$dic)
+
+model <- c("lag0", "lag1", "lag2", "lag3")
+c2tis <- tibble(model, dic)
+kableExtra::kable(c2tis, booktabs = T)
+```
+
+**Model comparison: DIC, CPO and/or PIT**
+
+The precision of stratum has been fixed with the prior information.
+
+```{r,echo=FALSE, eval=FALSE}
+summary(modelc22)
+```
+
+Deviance information criterion (DIC) between two model stratum as the fixed effect and stratum as a random effect, respectively. The smallest DIC (stratum as a random effect) indicates the best-fit model.
+
+```{r, echo=FALSE}
+c(modelc2$dic$dic, modelc22$dic$dic )
+```
+
+Conditional predictive ordinate - the smallest CPO indicates the best-fit model.
+
+```{r, cpo_standard, message=FALSE, warning=FALSE, echo=FALSE, eval=FALSE}
+# stratum as fixed effect
+cpo.ctis <- modelc22$cpo$cpo 
+cITS <- sum(log(cpo.ctis))
+cITS
+```
+
+```{r, cpo_control, message=FALSE, warning=FALSE, echo=FALSE, eval=FALSE}
+# stratum as random effect 
+cpo.c2tis <- modelc2$cpo$cpo 
+
+controlITS <- sum(log(cpo.c2tis))
+
+controlITS # 
+```
+
+A histogram of PIT must resemble a uniform distribution; extreme values indicate outlying observations. Both model's outputs don't show a normal distributions - skewed to the right
+
+```{r, PIT_stis,  message=FALSE, warning=FALSE, echo=FALSE, eval=FALSE}
+# probability integral transform (PIT)
+pit.ctis <- modelc2$cpo$pit
+
+hist(pit.ctis,main =" ", ylab="frequency")
+```
+
+```{r,  PIT_ctis,  message=FALSE, warning=FALSE, echo=FALSE, eval=FALSE}
+pit2.ctis <- modelc22$cpo$pit
+
+hist(pit2.ctis,main =" ", ylab="frequency")
+```
+
+**Final Results - Modelc22**
+
+Over time, for every one-unit increase in months, since the study began, there is an estimated decrease in the incidence rate by approximately 19.3%. Conversely, for every one-unit increase in months since the MTAT event, there is an estimated increase in the incidence rate by approximately 21.0%. During the post-period, there is a substantial estimated increase in the incidence rate by approximately 358.1%. The intervention shows a potential decrease in the incidence rate by approximately 4.3%, although there is some uncertainty in the effects. These findings provide valuable insights for understanding the dynamics of the incidence rate and can inform targeted interventions to mitigate the risk of the outcome. The "2-month lagged EVI" suggests a potential decrease in the incidence rate by approximately 84.7% to 1.2%. Conversely, the "2-month lagged rainfall" and "2-month lagged day temp" indicate a slight increase in the incidence rate by approximately 0.2% to 11.2% and 6.3% to 16.3%, respectively. However, the wide uncertainty intervals highlight the need for further investigation and consideration of other factors to better understand the associations. The analysis uncovered significant interactions between variables, revealing the dynamic nature of interventions over time. The "time: Intervention" interaction indicated that the intervention's effect varied with time, resulting in a 12.3% increase in the incidence rate for each unit increase in time. The "Intervention:time_post" interaction showed an 11.0% decrease in the incidence rate for each unit increase in time during the post period. Moreover, the "Intervention:post" interaction demonstrated a substantial reduction of approximately 92.7% in the incidence rate during the post period when the intervention was implemented. These findings underscore the importance of considering the timing of interventions for understanding their impact on the outcome.
+
+Among the months examined, April, May, and June showed estimated incidence rate ratios below 1, indicating a lower incidence rate compared to the reference month. Specifically, April had an estimated incidence rate ratio of approximately 44.1%, May had 50.2%, and June had 68.9% compared to the reference month. However, the uncertainty intervals for these months suggest some variability and the possibility of non-significant associations.
+
+For the remaining months (February, March, July, August, September, October, November, and December), the estimated incidence rate ratios ranged from approximately 36.0% to 267.2% compared to the reference month. However, since the uncertainty intervals include the value 1 for most of these months, it suggests that the associations may not be statistically significant.
+
+```{r, message=FALSE, warning=FALSE, echo=FALSE}
+resultsc = exp(summary(modelc22)[[3]])[,c(1,3,5)] %>% 
+  round(3) %>% 
+  as.data.frame()
+
+colnames(resultsc) = c("Incidence rate ratio", "2.5th quantile, IRR", "97.5th quantile, IRR")
+rownames(resultsc) = c("Intercept",
+                      "Months since study beginning",
+                      "Intervention" ,
+                      "Months since MTAT",
+                      "Post period",
+                      "2-month lagged EVI",
+                      "2-month lagged rainfall",
+                      "2-month lagged night temp",
+                      "2-month lagged day temp",
+                      "Feb",
+                      "Mar", 
+                      "Apr",
+                      "May",
+                      "Jun", 
+                      "Jul", 
+                      "Aug",
+                      "Sep",
+                      "Oct", 
+                      "Nov",
+                      "Dec",
+                      "time:Intervention",
+                      "Intervention:time_post",
+                      "Intervention:post")
+
+kableExtra::kable(resultsc, booktabs = T)
+```
+
+```{r, Estimates_for_controlled ITS, message=FALSE, warning=FALSE, echo=FALSE, eval=FALSE}
+counterfactualc = c_data %>%
+  bind_cols(modelc22$summary.fitted.values) %>% #Join predicted case counts to data
+  filter(post==1) %>% #Restrict to the post period
+  mutate(log_mean = log(mean), #Convert estimates back to log scale
+         counterfactual_cases = exp(log_mean -
+                                      summary(modelc22)[[3]]["time_post","mean"] * time_post -
+                                      summary(modelc22)[[3]]["post","mean"] * post)) %>%
+  summarise(counterfactual_cases = sum(counterfactual_cases),
+            estimated_cases = sum(mean))
+
+counterfactualc$counterfactual_cases - counterfactualc$estimated_cases #Cases decreased 
+(counterfactualc$counterfactual_cases - counterfactualc$estimated_cases)/
+  counterfactualc$estimated_cases * 100 #Percent reduction (92%)
+```
+
+```{r, Counterfactual plot for contrelled ITS, message=FALSE, warning=FALSE, echo=FALSE}
+# ggplot(c_data %>%
+#          bind_cols(modelc2$summary.fitted.values) %>% #Join predicted case counts to data
+#          mutate(log_mean = log(mean), #Convert estimates back to log scale
+#                 counterfactual_cases = exp(log_mean -
+#                                       summary(modelc2)[[3]]["time_post","mean"] * time_post -
+#                                       summary(modelc2)[[3]]["post","mean"] * post)) %>%
+#          group_by(time) %>%
+#          summarise(incidence = sum(cases)/sum(population)*1000,
+#                    estimated_incidence = sum(mean)/sum(population)*1000,
+#                    counterfactual_incidence = sum(counterfactual_cases)/sum(population)*1000)) +
+#   geom_line(aes(x = time, y = counterfactual_incidence, color = "Counterfactual")) +
+#   geom_line(aes(x = time, y = estimated_incidence, color = "Estimated")) +
+#   geom_line(aes(x = time, y = incidence, color = "Observed")) +
+#   geom_vline(aes(xintercept = 12, linetype = "MTAT roll-out")) +
+#   labs(title = "Monthly incidence per 1,000 population", linetype = "", color = "Incidence",
+#        y = "Incidence")
+
+
+ggplot(c_data %>%
+         bind_cols(modelc22$summary.fitted.values) %>% #Join predicted case counts to data
+         mutate(log_mean = log(mean), #Convert estimates back to log scale
+                counterfactual_cases = exp(log_mean -
+                                      summary(modelc22)[[3]]["time_post","mean"] * time_post -
+                                      summary(modelc22)[[3]]["post","mean"] * post)) %>%
+         group_by(time) %>%
+         summarise(incidence = sum(cases)/sum(population)*1000,
+                   estimated_incidence = sum(mean)/sum(population)*1000)) +
+  geom_line(aes(x = time, y = estimated_incidence, color = "Estimated")) +
+  geom_line(aes(x = time, y = incidence, color = "Observed")) +
+  geom_vline(aes(xintercept = 12, linetype = "MTAT roll-out")) +
+  labs(title = "Monthly incidence per 1,000 population",
+       linetype = "", color = "Incidence",
+       y = "Incidence")
+```

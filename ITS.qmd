@@ -1,0 +1,164 @@
+---
+title: "Standard and Controlled Interrupted Time Series Analyses"
+author: "Ellen Ferriss"
+format: html
+editor: visual
+---
+
+This post walks through setting up a 1) standard and 2) controlled interrupted time series analysis in R, taking a 2014 mass test-and-treat campaign, followed by focal test-and-treat through 2017, for malaria control as a motivating example. Intervention impact is estimated using the INLA package with simulated data; however, any package that accounts for correlation, e.g., `geepack` or `lme4`, that supports your data's distribution could be used.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval = TRUE, include = TRUE)
+library(tidyverse)
+```
+
+## Standard ITS
+
+For this example, we assume 12 villages receive the intervention. Villages are observed for 100 months, and the intervention is assumed to roll-out at month 60. Prior to MTAT, incidence is stable at 20 cases per 1,000 population per month. A 10% reduction in incidence rates following MTAT (level change) and 0.5% monthly reduction from FTAT (trend change) are simulated.
+
+First, we set up a dataset with the minimum necessary covariates. Variables include village ID, months since the beginning of the study, a spline term for months since the beginning of the intervention, an indicator variable that captures whether the observation is prior to or following roll-out, and the outcome, malaria cases.
+
+```{r Create datatsets for standard ITS}
+set.seed(1)
+data = data.frame(id = rep(1:12, each = 100), 
+                  time = rep(c(0:99), 12)) %>% #Monthly visit number
+  mutate(time_post = if_else(time<60, 0, time-60), 
+         #Time spline for post-intervention period
+         post = if_else(time<60, 0, 1), 
+         #Indicator for whether observation follows intervention roll-out.
+         population = round(rep(rnorm(12, mean = 5000, sd = 1000), each = 100)),
+         #Simulated village populations
+         cases = round(0.9^post*0.995^time_post*(0.02*population)+rnorm(n(), mean = 0, sd = 10)))
+```
+
+```{r Visualize data for standard ITS, message=FALSE}
+ggplot(data %>%
+         group_by(time) %>%
+         summarise(incidence = sum(cases)/sum(population)*1000)) +
+  geom_line(aes(x = time, y = incidence)) +
+  geom_vline(aes(xintercept = 60, linetype = "MTAT roll-out"), color = "green") +
+  labs(title = "Monthly incidence per 1,000 population", linetype = "",
+       y = "Incidence", x = "Months since beginning of the study")
+```
+
+We estimate monthly incidence rates, assuming a negative binomial distribution, using the log population as an offset, with random intercepts for each village (IID) and the month of observation (AR-1). While we haven't simulated AR-1 autocorrelated data, we include this component in the model for demonstration purposes. In this example, an 8.7% drop in incidence is estimated immediately following roll-out with an additional 0.5% decrease per month thereafter.
+
+```{r Regression model for standard ITS, message=FALSE, warning=FALSE}
+library(INLA)
+
+model = inla(cases ~ time + time_post + post + offset(log(population)) + 
+               f(time2, model = "ar1") + f(id, model = "iid"),
+     family = "nbinomial",
+     data = data %>%
+       mutate(time2 = time))
+
+results = exp(summary(model)[[3]])[,c(1,3,5)] %>% 
+  round(3) %>% 
+  as.data.frame()
+
+colnames(results) = c("Incidence rate ratio", "2.5th quantile, IRR", "97.5th quantile, IRR")
+rownames(results) = c("Intercept", "Months since study beginning", 
+                      "Months since MTAT", "Post period")
+
+kableExtra::kable(results, booktabs = T) %>%
+  kableExtra::kable_styling(bootstrap_options = c("striped", "condensed", "responsive"))
+
+```
+
+Next, we conduct a counterfactual analysis to estimate how many additional cases would have been observed if not for the intervention. To accomplish this, we convert the predicted case counts, which are labelled `mean` in `model$summary.fitted.values`, back to log-scale so that we can remove the effects associated with the intervention. Specifically, the regression coefficient for the post-intervention period (level change) and time since intervention roll-out (trend change), multiplied by time since roll-out, are subtracted off. Now, we have counterfactual case counts in log-scale, which we can exponeniate to get counterfactual cases. In our example, 8,534 cases were averted, or 20.5%, during the MTAT/FTAT period.
+
+```{r Counterfactual estimate}
+counterfactual = data %>%
+  bind_cols(model$summary.fitted.values) %>% #Join predicted case counts to data
+  filter(post==1) %>% #Restrict to the post period
+  mutate(log_mean = log(mean), #Convert estimates back to log scale
+         counterfactual_cases = exp(log_mean -
+                                      summary(model)[[3]]["time_post","mean"] * time_post -
+                                      summary(model)[[3]]["post","mean"] * post)) %>%
+  summarise(counterfactual_cases = sum(counterfactual_cases),
+            estimated_cases = sum(mean))
+
+counterfactual$counterfactual_cases - counterfactual$estimated_cases #Cases averted
+(counterfactual$counterfactual_cases - counterfactual$estimated_cases)/
+  counterfactual$estimated_cases * 100 #Percent reduction
+```
+
+```{r Counterfactual plot}
+ggplot(data %>%
+         bind_cols(model$summary.fitted.values) %>% 
+         #Join predicted case counts to data
+         mutate(log_mean = log(mean), #Convert estimates back to log scale
+                counterfactual_cases = exp(log_mean -
+                                      summary(model)[[3]]["time_post","mean"] * time_post -
+                                      summary(model)[[3]]["post","mean"] * post)) %>%
+         group_by(time) %>%
+         summarise(incidence = sum(cases)/sum(population)*1000,
+                   estimated_incidence = sum(mean)/sum(population)*1000,
+                   counterfactual_incidence = sum(counterfactual_cases)/sum(population)*1000)) +
+  geom_line(aes(x = time, y = counterfactual_incidence, color = "Counterfactual")) +
+  geom_line(aes(x = time, y = estimated_incidence, color = "Estimated")) +
+  geom_line(aes(x = time, y = incidence, color = "Observed")) +
+  geom_vline(aes(xintercept = 60, linetype = "MTAT roll-out")) +
+  labs(title = "Monthly incidence per 1,000 population", linetype = "", 
+       color = "Incidence", y = "Incidence", 
+       x = "Months since beginning of the study")
+```
+
+## Controlled ITS
+
+For this example, we assume 12 villages total, 6 in each the intervention and control groups. Villages are observed for 100 months, and the intervention is assumed to roll-out at month 60 in all intervention villages. Prior to MTAT, incidence rates are comparable between groups (20 cases per 1,000 population per month), and transmission is stable. A 10% reduction following MTAT (level change) and 0.5% monthly reduction from FTAT (trend change) are simulated in the intervention group only.
+
+Again, we set up a dataset with the minimum necessary covariates: village ID, group (control or intervention), months since the beginning of the study, a spline term for months since the beginning of the intervention, a pre/post indicator variable, and malaria cases. Our exposures of interest are the interactions of group with the 1) post-intervention period and 2) time since the intervention.
+
+```{r Create datatsets}
+set.seed(1)
+data = data.frame(id = rep(1:12, each = 100), 
+                  group = c(rep("control", 600), rep("intervention", 600)), 
+                  #Each village is observed 100 times. 
+                  time = rep(c(0:99), 12)) %>% #Monthly visit number
+  mutate(time_post = if_else(time<60, 0, time-60), 
+         #Time spline for post-intervention period
+         post = if_else(time<60, 0, 1), 
+         #Indicator for whether observation follows intervention roll-out.
+         population = round(rep(rnorm(12, mean = 6000, sd = 1000), each = 100)),
+         #Simulated village populations
+         cases = round(ifelse(post==0, 0.02*population+rnorm(n(), mean = 0, sd = 10),
+                        ifelse(group=="control", 0.02*population+rnorm(n(), mean = 0, sd = 10),
+                               0.9*0.995^time_post*(0.02*population)+rnorm(n(), mean = 0, sd = 10)))))
+```
+
+```{r Visualize data, message=FALSE}
+ggplot(data %>%
+         group_by(group, time) %>%
+         summarise(incidence = sum(cases)/sum(population)*1000)) +
+  geom_line(aes(x = time, y = incidence, color = group)) +
+  geom_vline(aes(xintercept = 60, linetype = "MTAT roll-out")) +
+  labs(title = "Monthly incidence per 1,000 population", linetype = "",
+       y = "Incidence", x = "Months since beginning of the study", color = "Group")
+```
+
+We estimate monthly incidence rates, assuming a negative binomial distribution, using log population as an offset with random intercepts for each village (IID) and the month of observation (AR-1). Interaction terms are used to estimate the relative change in incidence rates in intervention areas compared to control areas 1) immediately following MTAT (level change) and 2) each additional month thereafter (trend change). In the intervention group, we estimate a 9.2% greater reduction in incidence following roll-out compared to the control group. A 0.4% decrease per month over baseline is estimated in the intervention group above-and-beyond the decrease estimated in the control group (0% in our example).
+
+```{r Regression model, message=FALSE, warning=FALSE}
+library(INLA)
+
+model = inla(cases ~ time*group + time_post*group + post*group + offset(log(population)) + 
+               f(time2, model = "ar1") + f(id, model = "iid"),
+     family = "nbinomial",
+     data = data %>%
+       mutate(time2 = time))
+
+results = exp(summary(model)[[3]])[,c(1,3,5)] %>% 
+  round(3) %>% 
+  as.data.frame()
+
+colnames(results) = c("Incidence rate ratio", "2.5th quantile, IRR", "97.5th quantile, IRR")
+rownames(results) = c("Intercept", "Months since study beginning", "Intervention group", 
+                      "Months since MTAT", "Post period", 
+                      "Interaction: Months since study beginning x Intervention group", 
+                      "Interaction: Months since MTAT x Intervention group",
+                      "Interaction: Post period x Intervention group")
+
+kableExtra::kable(results, booktabs = T) %>%
+    kableExtra::kable_styling(bootstrap_options = c("striped", "condensed", "responsive"))
+```
